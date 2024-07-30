@@ -1,6 +1,7 @@
 package com.panick.littlelemon
 
 import android.content.Context
+import androidx.lifecycle.LiveData
 import androidx.room.*
 
 @Entity(tableName = "menu_items")
@@ -15,16 +16,16 @@ data class MenuItemEntity(
 @Dao
 interface MenuItemDao {
     @Query("SELECT * FROM menu_items")
-    suspend fun getAllMenuItems(): List<MenuItemEntity>
+    fun getAllMenuItems(): LiveData<List<MenuItemEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMenuItems(menuItems: List<MenuItemEntity>)
+    fun insertMenuItems(menuItems: List<MenuItemEntity>)
 
     @Query("DELETE FROM menu_items")
-    suspend fun deleteAllMenuItems()
+    fun deleteAllMenuItems()
 }
 
-@Database(entities = [MenuItemEntity::class], version = 1, exportSchema = false)
+@Database(entities = [MenuItemEntity::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun menuItemDao(): MenuItemDao
 
@@ -33,15 +34,35 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
+            val tempInstance = INSTANCE
+            if (tempInstance != null) {
+                return tempInstance
+            }
+
+            synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
                 ).build()
                 INSTANCE = instance
-                instance
+                return instance
             }
         }
     }
 }
+
+
+/*
+class InventoryRepository(context: Context) {
+    private val database = Room.databaseBuilder(
+        context.applicationContext,
+        AppDatabase::class.java,
+        "inventory.db"
+    ).createFromAsset("database/inventory.db").build()
+
+    fun getAllMenuItems() = database.menuItemDao().getAllMenuItems()
+
+    fun insertMenuItems(menuItems: List<MenuItemEntity>) =
+        database.menuItemDao().insertMenuItems(menuItems)
+}*/

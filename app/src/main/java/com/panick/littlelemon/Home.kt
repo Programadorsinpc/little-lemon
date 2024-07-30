@@ -24,6 +24,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import java.math.BigInteger
+
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -103,4 +105,9 @@ fun SearchBar() {
         label = { Text("Buscar en el menú") },
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+@Composable
+fun MenuItems(menu:List<MenuItemNetwork>){
+
 }

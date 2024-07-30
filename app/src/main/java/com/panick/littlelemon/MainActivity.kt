@@ -6,7 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -22,7 +25,9 @@ import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
     private val client = HttpClient(Android) {
@@ -30,6 +35,7 @@ class MainActivity : ComponentActivity() {
             json(contentType = ContentType("text", "plain"))
         }
     }
+    //val inventoryRepository by lazy { InventoryRepository(this) }
 
     private lateinit var database: AppDatabase
 
@@ -37,6 +43,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         database = AppDatabase.getDatabase(this)
+        lifecycleScope.launch {
+            fetchMenuDataAndStoreInDb()
+        }
         setContent {
             LittleLemonTheme {
                 MyNavigation()
@@ -44,19 +53,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun fetchMenuDataAndStoreInDb() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val response: HttpResponse = client.get("https://api.tu-servidor.com/menu")
-                val menuNetworkData: MenuNetworkData = response.body()
-                storeMenuDataInDb(menuNetworkData.menu)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    private suspend fun fetchMenuDataAndStoreInDb() {
+        try {
+            val response: HttpResponse =
+                client.get("https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/menu.json")
+            val menuNetworkData: MenuNetworkData = response.body()
+            println(menuNetworkData)
+            storeMenuDataInDb(menuNetworkData.menu)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    private suspend fun storeMenuDataInDb(menuItems: List<MenuItemNetwork>) {
+    private fun storeMenuDataInDb(menuItems: List<MenuItemNetwork>) {
         val menuItemEntities = menuItems.map { menuItem ->
             MenuItemEntity(
                 id = menuItem.id,
@@ -66,8 +75,13 @@ class MainActivity : ComponentActivity() {
                 image = menuItem.image
             )
         }
-        database.menuItemDao().deleteAllMenuItems()
-        database.menuItemDao().insertMenuItems(menuItemEntities)
+        runBlocking(IO) {
+            database.menuItemDao().deleteAllMenuItems()
+            database.menuItemDao().insertMenuItems(menuItemEntities)
+            println("Se ha guardado los datos")
+            println(database.menuItemDao().getAllMenuItems().value)
+        }
+
     }
 }
 
