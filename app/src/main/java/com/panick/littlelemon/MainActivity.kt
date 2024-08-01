@@ -35,7 +35,6 @@ class MainActivity : ComponentActivity() {
             json(contentType = ContentType("text", "plain"))
         }
     }
-    //val inventoryRepository by lazy { InventoryRepository(this) }
 
     private lateinit var database: AppDatabase
 
@@ -49,6 +48,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             LittleLemonTheme {
                 MyNavigation()
+                /*val itemsMenu by database.menuItemDao().getAllMenuItems().observeAsState(emptyList())
+                println("Datos en la DB: $itemsMenu")*/
             }
         }
     }
@@ -72,14 +73,14 @@ class MainActivity : ComponentActivity() {
                 title = menuItem.title,
                 description = menuItem.description,
                 price = menuItem.price,
-                image = menuItem.image
+                image = menuItem.image,
+                category = menuItem.category
             )
         }
         runBlocking(IO) {
             database.menuItemDao().deleteAllMenuItems()
             database.menuItemDao().insertMenuItems(menuItemEntities)
             println("Se ha guardado los datos")
-            println(database.menuItemDao().getAllMenuItems().value)
         }
 
     }

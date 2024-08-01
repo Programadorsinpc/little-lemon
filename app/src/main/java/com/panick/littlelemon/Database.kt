@@ -10,7 +10,8 @@ data class MenuItemEntity(
     val title: String,
     val description: String,
     val price: Double,
-    val image: String
+    val image: String,
+    val category: String
 )
 
 @Dao
@@ -25,7 +26,7 @@ interface MenuItemDao {
     fun deleteAllMenuItems()
 }
 
-@Database(entities = [MenuItemEntity::class], version = 1)
+@Database(entities = [MenuItemEntity::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun menuItemDao(): MenuItemDao
 
@@ -44,7 +45,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Destruir y recrear la base de datos
+                    .build()
                 INSTANCE = instance
                 return instance
             }
