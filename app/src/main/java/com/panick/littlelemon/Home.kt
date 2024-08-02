@@ -1,10 +1,13 @@
 package com.panick.littlelemon
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -15,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -61,11 +66,18 @@ fun HomeScreen(navController: NavHostController) {
     // Estado del campo de búsqueda
     var searchQuery by remember { mutableStateOf("") }
 
-    // Filtrar y ordenar los elementos del menú según la búsqueda
+    // Obtener categorías únicas de los elementos del menú
+    val categories = itemsMenu.map { it.category }.distinct().sorted()
+
+    // Estado de la categoría seleccionada
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    // Filtrar y ordenar los elementos del menú según la búsqueda y categoría seleccionada
     val filteredMenu = itemsMenu
         .filter { item ->
-            item.title.contains(searchQuery, ignoreCase = true) || // Filtra por título
-                    item.description.contains(searchQuery, ignoreCase = true) // O por descripción
+            (selectedCategory == "All" || item.category.contains(selectedCategory, ignoreCase = true)) &&
+                    (item.title.contains(searchQuery, ignoreCase = true) || // Filtra por título
+                            item.description.contains(searchQuery, ignoreCase = true)) // O por descripción
         }
         .sortedBy { it.title } // Ordenar alfabéticamente por título
 
@@ -92,32 +104,31 @@ fun HomeScreen(navController: NavHostController) {
             value = searchQuery,
             onValueChange = { searchQuery = it },
             label = { Text("Buscar en el menú") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             placeholder = { Text("Ingresa una búsqueda") },
-            leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "Buscar") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Buscar"
+                )
+            },
             singleLine = true,
             shape = RoundedCornerShape(8.dp), // Estilizar el campo de texto
         )
 
         Spacer(modifier = Modifier.height(16.dp)) // Espaciador
 
+        // Lista de categorías como chips
+        MenuBreakdown(
+            categories = categories,
+            selectedCategory = selectedCategory,
+            onChipClick = { selectedCategory = it }
+        )
+
         // Lista de elementos del menú
         MenuItemsList(menu = filteredMenu)
-
-        /*Spacer(modifier = Modifier.height(16.dp)) // Espaciador
-
-        // Botón para navegar a la pantalla de perfil
-        Button(
-            onClick = {
-                navController.navigate(ProfileDestination.route)
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            )
-        ) {
-            Text(text = "Order Take")
-        }*/
     }
 }
 
@@ -223,6 +234,7 @@ fun MenuItem(itemMenu: MenuItemEntity) {
             )
         }
     }
+    // Divider horizontal para separar cada item
     HorizontalDivider(
         modifier = Modifier.padding(start = 8.dp, end = 8.dp),
         color = Color.LightGray,
@@ -234,6 +246,62 @@ fun MenuItem(itemMenu: MenuItemEntity) {
 @Composable
 fun MenuItemPreview() {
     MenuItem(itemMenu = menuItems[0])
+}
+
+@Composable
+fun MenuBreakdown(
+    categories: List<String>,
+    selectedCategory: String,
+    onChipClick: (String) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Añadir opción de 'Todos' al inicio
+        item {
+            MenuCategory(
+                category = "All",
+                isSelected = selectedCategory == "All",
+                onClick = { onChipClick("All") }
+            )
+        }
+
+        // Iterar sobre las categorías disponibles
+        items(categories) { text ->
+            MenuCategory(
+                category = text,
+                isSelected = text == selectedCategory,
+                onClick = { onChipClick(text) }
+            )
+        }
+    }
+}
+
+@Composable
+fun MenuCategory(
+    category: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .background(
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = category,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White
+        )
+    }
 }
 
 val menuItems = listOf(
